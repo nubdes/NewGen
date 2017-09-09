@@ -1,0 +1,7 @@
+skill.c
+in function of ' void skill_weaponrefine ' add ' clif_additem(sd,idx,1,0); ' above ' clif_upgrademessage(sd->fd, 0, item->nameid); '
+
+
+				clif_upgrademessage(sd->fd, 0, item->nameid);
+				clif_inventorylist(sd);
+				clif_refine(sd->fd,0,idx,item->refine);
