@@ -1,0 +1,5 @@
+	find : the code below at unit.c
+  if (ud->skilltimer != INVALID_TIMER && ud->skill_id != LG_EXEEDBREAK && (!sd || !pc_checkskill(sd, SA_FREECAST) || skill_get_inf2(ud->skill_id)&INF2_GUILD_SKILL))
+		return 0; // Prevent moving while casting
+    
+  Remove:  || skill_get_inf2(ud->skill_id)&INF2_GUILD_SKILL
