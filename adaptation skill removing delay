@@ -1,0 +1,13 @@
+skill.c
+
+		sc = status_get_sc(src);
+		if(sc && sc->count) {
+			if(sc->data[SC_SPIRIT] &&
+				sc->data[SC_SPIRIT]->val2 == SL_WIZARD &&
+				sc->data[SC_SPIRIT]->val3 == ud->skill_id &&
+				ud->skill_id != WZ_WATERBALL)
+				sc->data[SC_SPIRIT]->val3 = 0; //Clear bounced spell check.
+
+			//if( sc->data[SC_DANCING] && skill_get_inf2(ud->skill_id)&INF2_SONG_DANCE && sd )
+			//	skill_blockpc_start(sd,BD_ADAPTATION,3000);
+		}
