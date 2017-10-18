@@ -1,0 +1,7 @@
+/*
+ battle.c
+ find: case MO_EXTREMITYFIST:
+ REPLACE THE CODE WITH THE CODE BELOW
+*/
+
+skillratio += 100*(7 + min(sstatus->sp,6000)/10);
