@@ -1,0 +1,13 @@
+status.c
+
+find : 
+if((skill = pc_checkskill(sd, AB_EUCHARISTICA)) > 0) {
+
+below the function add
+
+		if(sc && sc->data[SC_SPIRIT] && sc->data[SC_SPIRIT]->val2 == SL_STAR) {
+		sd->right_weapon.addele[ELE_HOLY] += 60;
+		sd->right_weapon.addclass[CLASS_BOSS] += 100;
+		sd->left_weapon.addele[ELE_HOLY] += 60;
+		sd->left_weapon.addclass[CLASS_BOSS] += 100;
+	}
