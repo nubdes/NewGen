@@ -1,0 +1,10 @@
+find :
+
+		case CG_ARROWVULCAN:
+			skillratio += 100 + 100 * skill_lv;
+
+add
+
+			if (sd && sd->sc.data[SC_SPIRIT] && sd->sc.data[SC_SPIRIT]->val2 == SL_BARDDANCER)
+			skillratio += 1450;
+			break;
