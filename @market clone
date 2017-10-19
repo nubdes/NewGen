@@ -1,0 +1,535 @@
+Index: conf/battle/feature.conf
+===================================================================
+--- conf/battle/feature.conf	(revision 12540)
++++ conf/battle/feature.conf	(working copy)
+@@ -57,3 +57,19 @@
+ 
+ // Delay in miliseconds to open vending/buyingsotre after player logged in.
+ feature.autotrade_open_delay: 5000
++
++// Market Clone [AnnieRuru/Dastgir]
++// Can use @market all map
++// Default use for town flag map (Set : no)
++market_can_anywhere: no
++
++// how many seconds delay from creating another market clone ? (default: 10)
++// Note: if you set it too low like 1 second, player might spawn the clone all over the town, unit_free doesn't act fast enough to remove them, 10 seconds is ideal
++market_clone_delay: 10
++
++// the zeny cost for creating a market clone
++// Default = no (Disable)
++market_clone_zenycost: no
++
++// the color message when clicking on the market clone's chat room (default: PINK ! hahaha)
++market_msg_color: 0xFFC0CB
+Index: src/map/atcommand.c
+===================================================================
+--- src/map/atcommand.c	(revision 12540)
++++ src/map/atcommand.c	(working copy)
+@@ -2131,6 +2131,10 @@
+ 	if (md->guardian_data)
+ 		return 0; //Do not touch WoE mobs!
+ 
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( md->market_chat_id )
++		return 0;
++
+ 	if (flag)
+ 		status_zap(bl,md->status.hp, 0);
+ 	else
+@@ -3798,8 +3802,15 @@
+ 		//atcommand_broadcast( fd, sd, "@broadcast", "You will feel a bit of lag at this point !" );
+ 
+ 		iter = mapit_getallusers();
+-		for( pl_sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); pl_sd = (TBL_PC*)mapit_next(iter) )
++		for( pl_sd = (TBL_PC*)mapit_first(iter); mapit_exists(iter); pl_sd = (TBL_PC*)mapit_next(iter) ) {
+ 			pc_close_npc(pl_sd,2);
++			// Market Clone [AnnieRuru/Dastgir]
++			if ( pl_sd->market_clone_id ) {
++				status_damage( NULL, map_id2bl( pl_sd->market_clone_id ), 100, 0, 0, 5 );
++				pl_sd->market_clone_id = 0;
++				pl_sd->market_clone_delay = (int)time(NULL);
++			}
++		}
+ 		mapit_free(iter);
+ 
+ 		flush_fifos();
+@@ -9662,6 +9673,144 @@
+ 	return 0;
+ }
+ 
++// Market Clone [AnnieRuru/Dastgir]
++ACMD_FUNC(market) 
++{
++	char title[CHAT_SIZE_MAX], msg[CHAT_SIZE_MAX];
++	int clone_delay = battle_config.market_clone_delay; 
++	if ( sd->market_clone_id ) {
++		clif_displaymessage( fd, "You already have a Market clone summoned. Type '@marketkill' to remove that clone.");
++		return -1;
++	}
++	if ( sd->market_clone_delay + clone_delay > (int)time(NULL) ) {
++		safesnprintf( atcmd_output, CHAT_SIZE_MAX, "You must wait %d seconds before using this command again.", sd->market_clone_delay + clone_delay - (int)time(NULL) );
++		clif_displaymessage( fd, atcmd_output );
++		return -1;
++	}
++	if( !battle_config.market_can_anywhere ) {
++		if ( !map[sd->bl.m].flag.town ) {
++			clif_displaymessage( fd, "You can only use @market in a town.");
++			return -1;
++		}
++	}
++	if ( map_getcell( sd->bl.m, sd->bl.x, sd->bl.y, CELL_CHKNOCHAT ) ) {
++		clif_displaymessage( fd, "You cannot use @market in this area.");
++		return -1;
++	}
++	if ( pc_isdead(sd) ) {
++		clif_displaymessage( fd, "You can't create a Market clone while you are dead." );
++		return -1;
++	}
++	if ( npc_isnear( &sd->bl ) ) {
++		clif_displaymessage( fd, "You can't create a Market clone too near to an npc." );
++		return -1;
++	}
++	if ( !message || !*message ) {
++		clif_displaymessage( fd, "Syntax: @market \"<Title>\" \"<Message>\"");
++		return -1;
++	}
++//	if ( sscanf( message, "\"%[^\"]\" \"%[^\"]\"", title, msg ) < 2 ) {
++//		clif_displaymessage( fd, "Remember the Quotation Mark -> \"");
++//		clif_displaymessage( fd, "Syntax: @market \"<Title>\" \"<Message>\"");
++//		return false;
++//	} no more f*cking sscanf
++	{ // say hello to the dirties string calculation ~ Hooray ~ !!
++		int i = 0, j = 0, l = strlen( message ) +1;
++		char *temp = (char*)aMalloc( strlen( message ) +1 );
++		if ( message[0] != '\"' ) {
++			clif_displaymessage( fd, "Remember the <Title> should start with a Quotation Mark -> \"");
++			clif_displaymessage( fd, "Syntax: @market \"<Title>\" \"<Message>\"");
++			return -1;
++		}
++		i = 1;
++		while ( i <= l ) {
++			if ( message[i] == '\"' || message[i] == '\0' )
++				break;
++			else
++				temp[j++] = message[i];
++			i++;
++		}
++		if ( message[i] != '\"' ) {
++			clif_displaymessage( fd, "Remember the <Title> should end with a Quotation Mark -> \"");
++			clif_displaymessage( fd, "Syntax: @market \"<Title>\" \"<Message>\"");
++			return -1;
++		}
++		temp[j] = '\0';
++		safestrncpy( title, temp, CHAT_SIZE_MAX );		
++		i++;
++		if ( message[i] != ' ' ) {
++			clif_displaymessage( fd, "Remember the [Space] between the <Title> and <Message>.");
++			clif_displaymessage( fd, "Syntax: @market \"<Title>\" \"<Message>\"");
++			return -1;
++		}
++		i++;
++		if ( message[i] != '\"' ) {
++			clif_displaymessage( fd, "Remember the <Message> should start with a Quotation Mark -> \"");
++			clif_displaymessage( fd, "Syntax: @market \"<Title>\" \"<Message>\"");
++			return -1;
++		}
++		i++;
++		j = 0;
++		while ( i <= l ) {
++			if ( message[i] == '\"' || message[i] == '\0' )
++				break;
++			else
++				temp[j++] = message[i];
++			i++;
++		}
++		if ( message[i] != '\"' ) {
++			clif_displaymessage( fd, "Remember the <Message> should end with a Quotation Mark -> \"");
++			clif_displaymessage( fd, "Syntax: @market \"<Title>\" \"<Message>\"");
++			return -1;
++		}
++		temp[j] = '\0';
++		safestrncpy( msg, temp, CHAT_SIZE_MAX );
++		aFree( temp );
++	}
++	if ( strlen( title ) < 4 ) {
++		clif_displaymessage( fd, "The Title must more than 4 characters." );
++		return -1;
++	}
++	if ( strlen( title ) >= CHATROOM_TITLE_SIZE ) {
++		safesnprintf( atcmd_output, CHAT_SIZE_MAX, "The Title must not more than %d characters.", CHATROOM_TITLE_SIZE );
++		clif_displaymessage( fd, atcmd_output );
++		return -1;
++	}
++	if ( strlen( msg ) < 4 ) {
++		clif_displaymessage( fd, "The Message must more than 4 characters." );
++		return -1;
++	}
++	if(battle_config.market_clone_zenycost) {
++		if(sd->status.zeny < battle_config.market_clone_zenycost) {
++			safesnprintf( atcmd_output, CHAT_SIZE_MAX, "Can't use market clone not enough zeny, need %d zeny.", battle_config.market_clone_zenycost );
++			clif_displaymessage( fd, atcmd_output );
++			return -1;
++		}
++	}
++	sd->market_clone_id = mob_clone_spawn_market( sd, sd->bl.m, sd->bl.x, sd->bl.y, title, msg );
++	if ( !sd->market_clone_id ) {
++		clif_displaymessage( fd, "Market clone Cannot be Created." );
++		return -1;
++	}
++	if(battle_config.market_clone_zenycost)
++		pc_payzeny(sd, battle_config.market_clone_zenycost, LOG_TYPE_COMMAND, NULL);
++
++	clif_displaymessage( fd, "Market clone Created." );
++	return 0;
++}
++
++ACMD_FUNC(marketkill) {
++	if ( !sd->market_clone_id ) {
++		clif_displaymessage( fd, "You don't have a market clone yet. Type '@market \"<title>\" \"<message>\"' to create one.");
++		return -1;
++	}
++	status_damage( NULL, map_id2bl( sd->market_clone_id ), 100, 0, 0, 5 );
++	clif_displaymessage( fd, "Your market clone has removed." );
++	sd->market_clone_id = 0;
++	sd->market_clone_delay = (int)time(NULL);
++	return 0;
++}
++
+ #include "../custom/atcommand.inc"
+ 
+ /**
+@@ -9952,6 +10101,10 @@
+ 		ACMD_DEF(costume),
+ 		ACMD_DEF(cloneequip),
+ 		ACMD_DEF(clonestat),
++		
++		// Market Clone [AnnieRuru/Dastgir]
++		ACMD_DEF(market),
++		ACMD_DEF(marketkill),
+ 	};
+ 	AtCommandInfo* atcommand;
+ 	int i;
+Index: src/map/battle.c
+===================================================================
+--- src/map/battle.c	(revision 12540)
++++ src/map/battle.c	(working copy)
+@@ -7104,6 +7104,11 @@
+ 	if( (s_bl = battle_get_master(src)) == NULL )
+ 		s_bl = src;
+ 
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( target->type == BL_MOB )
++		if ( ((TBL_MOB*)target)->market_chat_id )
++			return -1;
++
+ 	if ( s_bl->type == BL_PC ) {
+ 		switch( t_bl->type ) {
+ 			case BL_MOB: // Source => PC, Target => MOB
+@@ -7909,7 +7914,13 @@
+ 	{ "devotion_rdamage_skill_only",        &battle_config.devotion_rdamage_skill_only,     1,      0,      1,              },
+ 	{ "max_extended_aspd",                  &battle_config.max_extended_aspd,               193,    100,    199,            },
+ 	{ "monster_chase_refresh",              &battle_config.mob_chase_refresh,               1,      0,      30,             },
+-	{ "icewall_walk_block",                 &battle_config.icewall_walk_block,              75,     0,      255,            }
++	{ "icewall_walk_block",                 &battle_config.icewall_walk_block,              75,     0,      255,            },
++
++	// Market Clone [AnnieRuru/Dastgir]
++	{ "market_can_anywhere",             &battle_config.market_can_anywhere,          0,      0,      1,              },
++	{ "market_clone_delay",             &battle_config.market_clone_delay,          0,      0,      INT_MAX,              },
++	{ "market_clone_zenycost",             &battle_config.market_clone_zenycost,          0,      0,      MAX_ZENY,              },
++	{ "market_msg_color",             &battle_config.market_msg_color,          0xFFC0CB,      0,      INT_MAX,              },
+ };
+ 
+ #ifndef STATS_OPT_OUT
+Index: src/map/battle.h
+===================================================================
+--- src/map/battle.h	(revision 12540)
++++ src/map/battle.h	(working copy)
+@@ -574,6 +574,12 @@
+ 	int max_extended_aspd;
+ 	int mob_chase_refresh; //How often a monster should refresh its chase [Playtester]
+ 	int icewall_walk_block; //How long a monster should stay trapped in icewall [Playtester]
++
++	// Market Clone [AnnieRuru/Dastgir]
++	int market_can_anywhere;
++	int market_clone_delay;
++	int market_clone_zenycost;
++	int market_msg_color;
+ } battle_config;
+ 
+ void do_init_battle(void);
+Index: src/map/chat.c
+===================================================================
+--- src/map/chat.c	(revision 12540)
++++ src/map/chat.c	(working copy)
+@@ -23,7 +23,7 @@
+ 
+ /// Initializes a chatroom object (common functionality for both pc and npc chatrooms).
+ /// Returns a chatroom object on success, or NULL on failure.
+-static struct chat_data* chat_createchat(struct block_list* bl, const char* title, const char* pass, int limit, bool pub, int trigger, const char* ev, int zeny, int minLvl, int maxLvl)
++struct chat_data* chat_createchat(struct block_list* bl, const char* title, const char* pass, int limit, bool pub, int trigger, const char* ev, int zeny, int minLvl, int maxLvl)
+ {
+ 	struct chat_data* cd;
+ 
+@@ -132,6 +132,25 @@
+ 		return 0;
+ 	}
+ 
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( cd->owner->type == BL_MOB ) {
++		struct mob_data *md = (TBL_MOB*)cd->owner;
++		if ( md->market_chat_id ) {
++			short msg_len = 0;
++			char output[CHAT_SIZE_MAX];
++			safesnprintf( output, CHAT_SIZE_MAX, "%s : %s", md->name, md->market_message );
++			msg_len = strlen( output )+1;
++			WFIFOHEAD( sd->fd, msg_len + 12 );
++			WFIFOW( sd->fd, 0 ) = 0x2C1;
++			WFIFOW( sd->fd, 2 ) = msg_len + 12;
++			WFIFOL( sd->fd, 4 ) = 0;
++			WFIFOL( sd->fd, 8 ) = (battle_config.market_msg_color & 0x0000FF) << 16 | (battle_config.market_msg_color & 0x00FF00) | (battle_config.market_msg_color & 0xFF0000) >> 16;
++			safestrncpy( (char*)WFIFOP( sd->fd,12 ), output, msg_len );
++			WFIFOSET( sd->fd, msg_len + 12 );
++			return 0;
++		}
++	}
++
+ 	if( !cd->pub && strncmp(pass, cd->pass, sizeof(cd->pass)) != 0 && !pc_has_permission(sd, PC_PERM_JOIN_ALL_CHAT) ) {
+ 		clif_joinchatfail(sd,1);
+ 		return 0;
+Index: src/map/chat.h
+===================================================================
+--- src/map/chat.h	(revision 12540)
++++ src/map/chat.h	(working copy)
+@@ -5,6 +5,8 @@
+ #define _CHAT_H_
+ 
+ #include "map.h" // struct block_list, CHATROOM_TITLE_SIZE
++#include "mob.h"		// Market Clone [AnnieRuru/Dastgir]
++#include "../common/socket.h"
+ 
+ #ifdef	__cplusplus
+ extern "C" {
+@@ -31,6 +33,7 @@
+ 	char npc_event[EVENT_NAME_LENGTH];
+ 	DBMap* kick_list;				//DBMap of users who were kicked from this chat
+ };
++struct chat_data* chat_createchat(struct block_list* bl, const char* title, const char* pass, int limit, bool pub, int trigger, const char* ev, int zeny, int minLvl, int maxLvl);
+ 
+ int chat_createpcchat(struct map_session_data* sd, const char* title, const char* pass, int limit, bool pub);
+ int chat_joinchat(struct map_session_data* sd, int chatid, const char* pass);
+Index: src/map/clif.c
+===================================================================
+--- src/map/clif.c	(revision 12540)
++++ src/map/clif.c	(working copy)
+@@ -4266,6 +4266,9 @@
+ 					if( md->dmglog[i].id == sd->status.char_id )
+ 						clif_monster_hp_bar(md, sd->fd);
+ 			}
++			// Market Clone [AnnieRuru/Dastgir]
++			if ( md->market_chat_id )
++				clif_dispchat( (struct chat_data*)map_id2bl( md->market_chat_id ), sd->fd );
+ #endif
+ 		}
+ 		break;
+@@ -8822,7 +8825,7 @@
+ 				memcpy(WBUFP(buf,54), md->guardian_data->guild_name, NAME_LENGTH);
+ 				memcpy(WBUFP(buf,78), md->guardian_data->castle->castle_name, NAME_LENGTH);
+ 			}
+-			else if( battle_config.show_mob_info )
++			else if( battle_config.show_mob_info && !md->market_chat_id )		// Market Clone [AnnieRuru/Dastgir]
+ 			{
+ 				char mobhp[50], *str_p = mobhp;
+ 				WBUFW(buf, 0) = cmd = 0x195;
+Index: src/map/map.c
+===================================================================
+--- src/map/map.c	(revision 12540)
++++ src/map/map.c	(working copy)
+@@ -1636,6 +1636,10 @@
+ int map_quit(struct map_session_data *sd) {
+ 	int i;
+ 
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( sd->market_clone_id )
++		status_damage( NULL, map_id2bl( sd->market_clone_id ), 100, 0, 0, 5 );
++
+ 	if(!sd->state.active) { //Removing a player that is not active.
+ 		struct auth_node *node = chrif_search(sd->status.account_id);
+ 		if (node && node->char_id == sd->status.char_id &&
+Index: src/map/mob.c
+===================================================================
+--- src/map/mob.c	(revision 12540)
++++ src/map/mob.c	(working copy)
+@@ -3612,6 +3612,49 @@
+ 	return md->bl.id;
+ }
+ 
++// Market Clone [AnnieRuru/Dastgir]
++int mob_clone_spawn_market( struct map_session_data *sd, int16 m, int16 x, int16 y, char market_title[], char market_msg[] ) { //Copy of mob_clone_spawn with some modification.
++	int mob_id;
++	struct mob_data *md;
++	struct mob_db* db;
++	struct status_data *mstatus;
++	struct chat_data* cd;
++
++	ARR_FIND( MOB_CLONE_START, MOB_CLONE_END, mob_id, mob_db_data[mob_id] == NULL );
++	if ( mob_id >= MOB_CLONE_END )
++		return 0;
++
++	db = mob_db_data[mob_id] = (struct mob_db*)aCalloc( 1, sizeof(struct mob_db) );
++	mstatus = &db->status;
++	safestrncpy( db->sprite, sd->status.name, NAME_LENGTH );
++	safestrncpy( db->name, sd->status.name, NAME_LENGTH );
++	safestrncpy( db->jname, sd->status.name, NAME_LENGTH );
++	db->lv = status_get_lv(&sd->bl);
++	memcpy( mstatus, &sd->base_status, sizeof( struct status_data ) );
++	mstatus->rhw.atk = mstatus->rhw.atk2 = mstatus->lhw.atk = mstatus->lhw.atk2 = mstatus->hp = mstatus->max_hp = mstatus->sp = mstatus->max_sp =  1;
++	mstatus->mode = 0;
++	memcpy( &db->vd, &sd->vd, sizeof( struct view_data ) );
++	db->base_exp = db->job_exp = db->range2 = db->range3 = 1;
++	db->option = 0;
++
++	md = mob_once_spawn_sub( &sd->bl, m, x, y, sd->status.name, mob_id, "", SZ_SMALL, AI_NONE );
++	if ( !md )
++		return 0;
++	md->special_state.clone = 1;
++	mob_spawn(md);
++	unit_setdir( &md->bl, unit_getdir(&sd->bl) );
++	cd = chat_createchat( &md->bl, market_title, "", 1, false, 0, "", 0, 1, MAX_LEVEL );
++	if ( !cd )
++		return 0;
++	md->market_chat_id = cd->bl.id;
++	safestrncpy( md->market_message, market_msg, CHAT_SIZE_MAX );
++	clif_dispchat( cd, 0 );
++	if ( sd->vd.dead_sit == 2 )
++		clif_sitting( &md->bl, false );
++
++	return md->bl.id;
++}
++
+ int mob_clone_delete(struct mob_data *md)
+ {
+ 	const int mob_id = md->mob_id;
+Index: src/map/mob.h
+===================================================================
+--- src/map/mob.h	(revision 12540)
++++ src/map/mob.h	(working copy)
+@@ -9,6 +9,7 @@
+ #include "map.h" // struct status_data, struct view_data, struct mob_skill
+ #include "status.h" // struct status data, struct status_change
+ #include "unit.h" // unit_stop_walking(), unit_stop_attack()
++#include "chat.h"	// Market Clone [AnnieRuru/Dastgir]
+ #include "npc.h"
+ 
+ #define MAX_RANDOMMONSTER 5
+@@ -185,6 +186,10 @@
+ 	 * MvP Tombstone NPC ID
+ 	 **/
+ 	int tomb_nid;
++
++	// Market Clone [AnnieRuru/Dastgir]
++	int market_chat_id;
++	char market_message[CHAT_SIZE_MAX];
+ };
+ 
+ 
+@@ -320,4 +325,7 @@
+ 
+ #define CHK_MOBSIZE(size) ((size) >= SZ_SMALL && (size) < SZ_MAX) /// Check valid Monster Size
+ 
++// Market Clone [AnnieRuru/Dastgir]
++int mob_clone_spawn_market( struct map_session_data *sd, int16 m, int16 x, int16 y, char market_title[], char market_msg[] );
++
+ #endif /* _MOB_H_ */
+Index: src/map/pc.h
+===================================================================
+--- src/map/pc.h	(revision 12540)
++++ src/map/pc.h	(working copy)
+@@ -612,6 +612,10 @@
+ 
+ 	short last_addeditem_index; /// Index of latest item added
+ 	int autotrade_tid;
++
++	// Market Clone [AnnieRuru/Dastgir]
++	int market_clone_id;
++	int market_clone_delay;
+ };
+ 
+ struct eri *pc_sc_display_ers; /// Player's SC display table
+Index: src/map/script.c
+===================================================================
+--- src/map/script.c	(revision 12540)
++++ src/map/script.c	(working copy)
+@@ -9527,6 +9527,10 @@
+ 	char *event=va_arg(ap,char *);
+ 	int allflag=va_arg(ap,int);
+ 
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( md->market_chat_id )
++		return 0;
++
+ 	md->state.npc_killmonster = 1;
+ 
+ 	if(!allflag){
+@@ -9546,6 +9550,10 @@
+ 	char *event=va_arg(ap,char *);
+ 	int allflag=va_arg(ap,int);
+ 
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( md->market_chat_id )
++		return 0;
++
+ 	if(!allflag){
+ 		if(strcmp(event,md->npc_event)==0)
+ 			status_kill(bl);
+@@ -9588,6 +9596,9 @@
+ 	struct mob_data *md;
+ 
+ 	md = BL_CAST(BL_MOB, bl);
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( md->market_chat_id )
++		return 0;
+ 	if (md->npc_event[0])
+ 		md->npc_event[0] = 0;
+ 
+@@ -9596,6 +9607,9 @@
+ }
+ static int buildin_killmonsterall_sub(struct block_list *bl,va_list ap)
+ {
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( ((TBL_MOB*)bl)->market_chat_id )
++		return 0;
+ 	status_kill(bl);
+ 	return 0;
+ }
+Index: src/map/skill.c
+===================================================================
+--- src/map/skill.c	(revision 12540)
++++ src/map/skill.c	(working copy)
+@@ -594,6 +594,11 @@
+ 				clif_skill_fail(sd,skill_id,USESKILL_FAIL_THERE_ARE_NPC_AROUND,0);
+ 				return true;
+ 			}
++			// Market Clone [AnnieRuru/Dastgir]
++			if ( sd->market_clone_id ) {
++				clif_colormes(sd,color_table[COLOR_RED], "You can't use vending while you already have a market clone.");
++				return true;
++			}
+ 		case MC_IDENTIFY:
+ 			return false; // always allowed
+ 		case WZ_ICEWALL:
+Index: src/map/status.c
+===================================================================
+--- src/map/status.c	(revision 12540)
++++ src/map/status.c	(working copy)
+@@ -1648,6 +1648,10 @@
+ 
+ 	status = status_get_status_data(target);
+ 
++	// Market Clone [AnnieRuru/Dastgir]
++	if ( target->type == BL_MOB )
++		if ( ((TBL_MOB*)target)->market_chat_id )
++			return 0;
+ 
+ 	// It's safe now [MarkZD]
+ 	if (hp_rate > 99)
