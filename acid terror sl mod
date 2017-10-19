@@ -1,0 +1,6 @@
+find : AM_ACIDTERROR
+
+ADD to the skill formula
+
+			if (sd && sd->sc.data[SC_SPIRIT] && sd->sc.data[SC_SPIRIT]->val2 == SL_ALCHEMIST)
+                        skillratio += 250;
