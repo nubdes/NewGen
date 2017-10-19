@@ -1,0 +1,10 @@
+find : 
+		case PA_SHIELDCHAIN:
+			skillratio += 30 * skill_lv;
+			break;
+      
+      
+add :
+
+			if (sd && sd->sc.data[SC_SPIRIT] && sd->sc.data[SC_SPIRIT]->val2 == SL_CRUSADER)
+			skillratio += 300;
