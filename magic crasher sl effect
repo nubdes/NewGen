@@ -1,0 +1,15 @@
+battle.c
+
+find : 
+#ifdef RENEWAL
+	if (flag&1)
+		damage = (damage * 14) / 10;
+#endif
+	return damage;
+}
+
+add : before 'return damage;'
+
+	if (flag&4 && sc && sc->data[SC_SPIRIT] && sc->data[SC_SPIRIT]->val2 == SL_WIZARD)
+        damage += damage*150/100;
+}
