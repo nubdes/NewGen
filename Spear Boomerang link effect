@@ -1,0 +1,8 @@
+battle.c
+
+find : KN_SPEARBOOMERANG
+
+ADD TO THE SKILL FORMULA:
+
+  if (sd && sd->sc.data[SC_SPIRIT] && sd->sc.data[SC_SPIRIT]->val2 == SL_KNIGHT)
+			skillratio += 300;
