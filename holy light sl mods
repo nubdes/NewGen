@@ -1,0 +1,8 @@
+find :
+					case AL_HOLYLIGHT:
+						skillratio += 25;
+						break;
+            
+add :
+						if (sd && sd->sc.data[SC_SPIRIT] && sd->sc.data[SC_SPIRIT]->val2 == SL_PRIEST)
+							skillratio *= 8; //Does 5x damage include bonuses from other skills?
