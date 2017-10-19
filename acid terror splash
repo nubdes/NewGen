@@ -1,5 +1,12 @@
 skill.c 
 
+find 
+	case RG_INTIMIDATE:
+	case AM_ACIDTERROR:
+	case BA_MUSICALSTRIKE:
+remove 
+	case AM_ACIDTERROR:
+
 find: 
 	case MO_COMBOFINISH:
 		if (!(flag&1) && sc && sc->data[SC_SPIRIT] && sc->data[SC_SPIRIT]->val2 == SL_MONK)
