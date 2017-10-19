@@ -6,16 +6,3 @@ if( require.weapon && !(pc_check_weapontype(sd,require.weapon) || (skill_id = LK
 		clif_skill_fail(sd,skill_id,USESKILL_FAIL_THIS_WEAPON,0);
 	return false;
 	}
-
-
-find :
-	case MC_LOUD:
-	case MG_ENERGYCOAT:
-	case MO_EXPLOSIONSPIRITS:
-	case MO_STEELBODY:
-	case MO_BLADESTOP:
-	case LK_AURABLADE:
-	
-add : 
-
-	case WS_GREEDYPARRY:
