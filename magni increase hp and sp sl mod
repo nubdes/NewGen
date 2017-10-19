@@ -15,3 +15,21 @@ add below :
 				bonus += 10;
         
 same to sp
+
+
+		//Bonus by SC
+		if (sc) {
+			if(sc->data[SC_INCMSPRATE])
+				bonus += sc->data[SC_INCMSPRATE]->val1;
+			if(sc->data[SC_RAISINGDRAGON])
+				bonus += (2 + sc->data[SC_RAISINGDRAGON]->val1);
+			if(sc->data[SC_SERVICE4U])
+				bonus += sc->data[SC_SERVICE4U]->val2;
+			if(sc->data[SC_MERC_SPUP])
+				bonus += sc->data[SC_MERC_SPUP]->val2;
+			if(sc->data[SC_LIFE_FORCE_F])
+				bonus += sc->data[SC_LIFE_FORCE_F]->val1;
+			if(sc->data[SC_VITATA_500])
+				bonus += sc->data[SC_VITATA_500]->val2;
+			if(sc->data[SC_MAGNIFICAT])
+				bonus += 10;
