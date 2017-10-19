@@ -1,0 +1,34 @@
+skill.c 
+
+find: 
+	case MO_COMBOFINISH:
+		if (!(flag&1) && sc && sc->data[SC_SPIRIT] && sc->data[SC_SPIRIT]->val2 == SL_MONK)
+		{	//Becomes a splash attack when Soul Linked.
+			map_foreachinshootrange(skill_area_sub, bl,
+				skill_get_splash(skill_id, skill_lv),BL_CHAR|BL_SKILL,
+				src,skill_id,skill_lv,tick, flag|BCT_ENEMY|1,
+				skill_castend_damage_id);
+		} else
+			skill_attack(BF_WEAPON,src,src,bl,skill_id,skill_lv,tick,flag);
+		break;
+
+	case TK_STORMKICK: // Taekwon kicks [Dralnu]
+		clif_skill_nodamage(src,bl,skill_id,skill_lv,1);
+		skill_area_temp[1] = 0;
+		map_foreachinshootrange(skill_attack_area, src,
+			skill_get_splash(skill_id, skill_lv), BL_CHAR|BL_SKILL,
+			BF_WEAPON, src, src, skill_id, skill_lv, tick, flag, BCT_ENEMY);
+		break;
+    
+add in between :
+
+	case AM_ACIDTERROR:
+		if (!(flag&1) && sc && sc->data[SC_SPIRIT] && sc->data[SC_SPIRIT]->val2 == SL_ALCHEMIST)
+		{	//Becomes a splash attack when Soul Linked.
+			map_foreachinshootrange(skill_area_sub, bl,
+				skill_get_splash(skill_id, skill_lv),BL_CHAR|BL_SKILL,
+				src,skill_id,skill_lv,tick, flag|BCT_ENEMY|1,
+				skill_castend_damage_id);
+		} else
+			skill_attack(BF_WEAPON,src,src,bl,skill_id,skill_lv,tick,flag);
+		break;
