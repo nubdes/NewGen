@@ -1,0 +1,17 @@
+status.c
+find :
+		//Bonus by SC
+		if (sc) {
+			//Increasing
+			if(sc->data[SC_INCMHPRATE])
+				bonus += sc->data[SC_INCMHPRATE]->val1;
+			if(sc->data[SC_APPLEIDUN])
+				bonus += sc->data[SC_APPLEIDUN]->val2;
+        
+        
+add below :
+
+			if(sc->data[SC_MAGNIFICAT])
+				bonus += 10;
+        
+same to sp
