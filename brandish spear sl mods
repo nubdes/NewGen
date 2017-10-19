@@ -1,0 +1,7 @@
+find : KN_BRANDISHSPEAR
+
+ADD after: ML_BRANDISHSPEAR: {
+
+				if (sd && sd->sc.data[SC_SPIRIT] && sd->sc.data[SC_SPIRIT]->val2 == SL_KNIGHT)
+				ratio = 280 + 20 * skill_lv;
+				skillratio += 50 + ratio;
