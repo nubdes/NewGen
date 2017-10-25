@@ -1,0 +1,10 @@
+/*
+* backup sql database
+*/
+mysqldump -u root -p database_name > /root/filename.sql
+
+/*
+* zip a file via command line
+* must be in target folder path
+*/
+zip -r filename.zip *
