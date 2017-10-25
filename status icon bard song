@@ -1,0 +1,33 @@
+/*
+* Diff Patch for Status Icon(Bard Song)
+* Manual Diff
+* Author : Jong Puno
+* Date : 9 / 20 / 2017
+*/
+
+at status.h under the function of 'enum si_type {'
+
+remove duplication of SI_STATS so it wont throw/overlap the SI_ function
+
+// Must be before SI_MAX, // Note: Duplicates are on top of the list
+	SI_MINDBREAKER = 1012,
+	SI_SERVICEFORYOU = 1013,
+	SI_DONTFORGETME = 1014,
+	SI_ASSNCROS = 1015,
+	SI_POEMBRAGI = 1016,
+	SI_APPLEIDUN = 1017,
+
+-----------
+
+at status.c in function of 'void initChangeTables(void)'
+
+add a new set of lines after: StatusIconChangeTable[SC_NORECOVER_STATE] = SI_HANDICAPSTATE_NORECOVER;
+
+// Add these lines
+	/* Status icon for songs */
+	StatusIconChangeTable[SC_MINDBREAKER] = SI_MINDBREAKER;
+	StatusIconChangeTable[SC_SERVICE4U] = SI_SERVICEFORYOU;
+	StatusIconChangeTable[SC_DONTFORGETME] = SI_DONTFORGETME;
+	StatusIconChangeTable[SC_ASSNCROS] = SI_ASSNCROS;
+	StatusIconChangeTable[SC_POEMBRAGI] = SI_POEMBRAGI;
+	StatusIconChangeTable[SC_APPLEIDUN] = SI_APPLEIDUN;
