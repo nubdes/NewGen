@@ -8,3 +8,12 @@ find:
 below sc_marionette add:
 			if(sc->data[SC_SPIRIT] && (sc->data[SC_SPIRIT]->val2 == SL_WIZARD || sc->data[SC_SPIRIT]->val2 == SL_SAGE))
 			bonus += ((TBL_PC*)bl)->status.base_level * 100;
+
+
+find:
+	if(sc->data[SC_FULL_THROTTLE])
+		vit += vit * sc->data[SC_FULL_THROTTLE]->val3 / 100;
+		
+add below:
+	if(sc->data[SC_SPIRIT] && (sc->data[SC_SPIRIT]->val2 == SL_WIZARD || sc->data[SC_SPIRIT]->val2 == SL_SAGE))
+		vit += ((TBL_PC*)bl)->status.int_ / 5;
