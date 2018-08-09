@@ -1,8 +1,20 @@
 skill.c 
-find :
+Find:
+	int skill_check_condition_castend﻿(﻿struct map_session_data* sd, short skill, short lv)
+		{
+		struct skill_condition require;
+		struct status_data *status;
+		int i;
+		int index[MAX_SKILL_ITEM_REQUIRE];
+Add Below:
+	struct status_change *sc = &sd->sc;
+	
+
+Find:
  function of require.weapon replace two codes with the code below
 
 if( require.weapon && !(pc_check_weapontype(sd,require.weapon) || (skill_id = LK_PARRYING && sc && sc->data[SC_SPIRIT] && sc->data[SC_SPIRIT]->val2 == SL_KNIGHT && sd->status.weapon == W_1HSWORD) || (skill_id = LK_PARRYING && sc && sc->data[SC_SPIRIT] && sc->data[SC_SPIRIT]->val2 == SL_STAR && sd->status.weapon == W_BOOK) ) ){
 		clif_skill_fail(sd,skill_id,USESKILL_FAIL_THIS_WEAPON,0);
 	return false;
 	}
+
