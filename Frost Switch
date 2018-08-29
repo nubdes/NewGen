@@ -1,0 +1,74 @@
+Frost Switch w/ Forbidden Error
+
+Find: (battle.c)
+			if( dat->src_type == BL_PC && (src = map_id2bl(dat->src_id)) &&
+				--((TBL_PC*)src)->delayed_damage == 0 && ((TBL_PC*)src)->state.hold_recalc ) {
+				((TBL_PC*)src)->state.hold_recalc = 0;
+				status_calc_pc(((TBL_PC*)src), SCO_FORCE);
+			}
+			
+Replace With:
+			if( dat->src_type == BL_PC && (src = map_id2bl(dat->src_id)))
+				((TBL_PC*)src)->delayed_damage--;
+				
+-=-=-=-=-=-=
+
+Find: (battle.c)
+		if( src && src->type == BL_PC && --((TBL_PC*)src)->delayed_damage == 0 && ((TBL_PC*)src)->state.hold_recalc ) {
+			((TBL_PC*)src)->state.hold_recalc = 0;
+			status_calc_pc(((TBL_PC*)src), SCO_FORCE);
+		}
+		
+Replace With:
+		if( src && src->type == BL_PC)
+			((TBL_PC*)src)->delayed_damage--;
+			
+-=-=-=-=-=-=
+
+Find: (clif.c) IGNORE IF NOT FOUND
+	if(!sd->status.inventory[index].identify || sd->delayed_damage != 0) {
+		clif_equipitemack(sd,index,0,ITEM_EQUIP_ACK_FAIL);	// fail
+		return;
+	}
+	
+Replace With:
+	if(!sd->status.inventory[index].identify) {
+		clif_equipitemack(sd,index,0,ITEM_EQUIP_ACK_FAIL);	// fail
+		return;
+	}
+
+-=-=-=-=-=
+
+Find: (pc.h)
+		unsigned int permanent_speed : 1; // When 1, speed cannot be changed through status_calc_pc().
+		unsigned int hold_recalc : 1;
+		
+Replace With:
+		unsigned int permanent_speed : 1; // When 1, speed cannot be changed through status_calc_pc().
+		//unsigned int hold_recalc : 1;
+		
+-=-=-=-=-=
+
+Find: (status.c)
+	if (bl->type == BL_PC && ((TBL_PC*)bl)->delayed_damage != 0) {
+		if (opt&SCO_FORCE)
+			((TBL_PC*)bl)->state.hold_recalc = 0; /* Clear and move on */
+		else {
+			((TBL_PC*)bl)->state.hold_recalc = 1; /* Flag and stop */
+			return;
+		}
+	}
+
+	// Remember previous values
+	
+Replace With:
+	//if (bl->type == BL_PC && ((TBL_PC*)bl)->delayed_damage != 0) {
+	//	if (opt&SCO_FORCE)
+	//		((TBL_PC*)bl)->state.hold_recalc = 0; /* Clear and move on */
+	//	else {
+	//		((TBL_PC*)bl)->state.hold_recalc = 1; /* Flag and stop */
+	//		return;
+	//	}
+	//}
+
+	// Remember previous values
