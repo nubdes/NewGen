@@ -1,0 +1,84 @@
+skill.c
+
+
+//Special message when trying to use strip on FCP [Jobbie]
+		//Spirit State
+		if (sd && tsc && sd->sc.data[SC_SPIRIT] && sd->sc.data[SC_SPIRIT]->val2 == SL_ROGUE &&
+			(skill_id == ST_FULLSTRIP && tsc && tsc->data[SC_CP_WEAPON] && tsc->data[SC_CP_HELM] && tsc->data[SC_CP_ARMOR] && tsc->data[SC_CP_SHIELD] ||
+				skill_id == RG_STRIPWEAPON && tsc->data[SC_CP_WEAPON] ||
+				skill_id == RG_STRIPSHIELD && tsc->data[SC_CP_SHIELD] ||
+				skill_id == RG_STRIPARMOR && tsc->data[SC_CP_ARMOR] ||
+				skill_id == RG_STRIPHELM && tsc->data[SC_CP_HELM]))
+		{
+			int item_id = 7139; // glistening coat
+			int ii;
+			ARR_FIND(0, MAX_INVENTORY, ii, sd->status.inventory[ii].nameid == item_id);
+
+			if (status_isimmune(bl))
+			{
+				if (i = skill_strip_equip(src, bl, location, i, skill_lv, d))
+				{
+					clif_skill_nodamage(src, bl, skill_id, skill_lv, i);
+				}
+				if (sd && !i)//Nothing stripped.
+				{
+					clif_skill_fail(sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+				}
+				break;
+			}
+		
+			if (skill_id != ST_FULLSTRIP&&ii < MAX_INVENTORY)
+			{
+				pc_delitem(sd, ii, 1, 0, 0, LOG_TYPE_CONSUME);
+				if (rand() % 100 < 40) {
+					switch (skill_id)
+					{
+					case RG_STRIPWEAPON:
+						status_change_end(bl, SC_CP_WEAPON, INVALID_TIMER);
+						break;
+					case RG_STRIPSHIELD:
+						status_change_end(bl, SC_CP_SHIELD, INVALID_TIMER);
+						break;
+					case RG_STRIPARMOR:
+						status_change_end(bl, SC_CP_ARMOR, INVALID_TIMER);
+						break;
+					case RG_STRIPHELM:
+						status_change_end(bl, SC_CP_HELM, INVALID_TIMER);
+						break;
+					}
+				}
+			}
+			if (i = skill_strip_equip(src, bl, location, i, skill_lv, d))
+			{
+				clif_skill_nodamage(src, bl, skill_id, skill_lv, i);
+			}
+			if (sd && skill_id == ST_FULLSTRIP && tsc && tsc->data[SC_CP_WEAPON] && tsc->data[SC_CP_HELM] && tsc->data[SC_CP_ARMOR] && tsc->data[SC_CP_SHIELD])
+			{
+				clif_gospel_info(sd, 0x28);
+				break;
+			}
+			if (sd && skill_id == RG_STRIPARMOR && tsc->data[SC_CP_ARMOR])
+			{
+				clif_skill_fail(sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+				break;
+			}
+			if (sd && skill_id == RG_STRIPWEAPON && tsc->data[SC_CP_WEAPON])
+			{
+				clif_skill_fail(sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+				break;
+			}
+			if (sd && skill_id == RG_STRIPSHIELD && tsc->data[SC_CP_SHIELD])
+			{
+				clif_skill_fail(sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+				break;
+			}
+			if (sd && skill_id == RG_STRIPHELM && tsc->data[SC_CP_HELM])
+			{
+				clif_skill_fail(sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+				break;
+			}
+			if (sd && !i)//Nothing stripped.
+			{
+				clif_skill_fail(sd, skill_id, USESKILL_FAIL_LEVEL, 0);
+			}
+		}
